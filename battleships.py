@@ -13,8 +13,9 @@ class App(tk.Frame):
     gameWon = ""
     titleLabel = None
     gridSize = 10
-    player_ships = []
-    enemy_ships = []
+    playerShipButtons = []
+    playerGrid = []
+    enemyGrid = []
 
     instructions = ["Place your ships now!", 
                     "Waiting for Player 2 to be ready", 
@@ -28,23 +29,46 @@ class App(tk.Frame):
                     "Hah, missed!"
                     ]
 
-    colours = ["Yellow", #1 size - submarine
-               "Purple", #2 size - Destroyers
-               "Cyan"  , #3 size - Cruisers
-               "Green" , #4 size - Battleship
-               "Magenta", #5 size - Aircraft Carrier
+    colours = ["Yellow", #Carrier
+               "Purple", #Battleship
+               "Cyan"  , #Cruiser
+               "Cyan" , #Cruiser
+               "Magenta", #Submarine
               ]
 
-    ships = ["Aircraft Carrier",
+    shipsLen = [5, 4, 3, 3, 2]
+
+    ships = ["Carrier",
              "Battleship",
              "Cruiser",
-             "Destroyer",
-             "Destroyer",
-             "Submarine",
+             "Cruiser",
              "Submarine"]
+
+    selectedShip = 0
 
     containers = []
     label_container = []
+
+    myShips = [None] * len(ships)
+
+    isOrientationVertical = True
+
+
+    class ship():
+        def __init__(self):
+            self.start = -1
+            self.end = -1
+            self.identity = -1
+            self.isOrientationVertical = False
+            self.destroyed = False
+
+        def setShip(self, start, identity, orientation):
+            self.start = start
+            self.identity = identity
+            self.isOrientationVertical = orientation
+
+        
+
     #Initialisation function
     def __init__(self, master=None):
         super().__init__(master)
@@ -93,10 +117,13 @@ class App(tk.Frame):
         self.instructionLabel = ttk.Label(self.containers[0], text=self.instructions[0]).grid(row=0, column=2, columnspan=3, sticky='news')
         # Player Ship Bar Widgets
         for i in range(0, len(self.ships)):
-            ttk.Button(self.containers[1], text=self.ships[i], width=12, command=partial(placeShips, i).grid(column=0, row=i, sticky='w', columnspan=2)
+            button = ttk.Button(self.containers[1], text=(self.ships[i], "V"), width=12, command=partial(self.selectShip, i))
+            self.playerShipButtons.append(button)
+            button.grid(column=0, row=i, sticky='w', columnspan=2)
+            self.myShips.append([i, -1, -1])
         # Enemy Ship bar widgets
         for i in range(0, len(self.ships)):
-            self.label_container.append(ttk.Label(self.containers[8], text=self.ships[i], width=12, command=partial(placeShips, i)).grid(column=4,row=i, sticky='e', columnspan=2))
+            self.label_container.append(ttk.Label(self.containers[8], text=self.ships[i], width=12).grid(column=4,row=i, sticky='e', columnspan=2))
         
         ttk.Label(self.containers[3], text="Your Board").grid(row=0, column=0)
         ttk.Label(self.containers[6], text="Enemy Board").grid(row=0, column=0)
@@ -107,9 +134,9 @@ class App(tk.Frame):
         count = 0
         for i in range(0, self.gridSize):
             for k in range (0, self.gridSize):
-                button = tk.Button(self.containers[4], text=" ", width=1, highlightbackground='blue', highlightcolor='blue', command=partial(self.button_press, count))
+                button = tk.Button(self.containers[4], text=" ", width=1, highlightbackground='blue', highlightcolor='blue', command=partial(self.placeShips, count))
                 button.grid(column=k, row=i)
-                App.player_ships.append(button)
+                App.playerGrid.append(button)
                 count += 1
 
         # Enemy Board widgets
@@ -118,7 +145,7 @@ class App(tk.Frame):
             for k in range (0, self.gridSize):
                 button = tk.Button(self.containers[7], text=" ", width=1, height=1,command=partial(self.button_press, count))
                 button.grid(column=k, row=i)
-                App.player_ships.append(button)
+                App.enemyGrid.append(button)
                 count += 1
 
         self.packAll()
@@ -140,13 +167,68 @@ class App(tk.Frame):
         self.enemyShipContainer.pack(side="left")
         #self.divider.pack()
 
-    def placeShips(self):
-        selectedShip = None
+    def selectShip(self, n):
+        if(self.selectedShip == n):
+            self.isOrientationVertical = not self.isOrientationVertical
+        if(not self.isOrientationVertical):
+            self.playerShipButtons[n].configure(text=(self.ships[n], "H"))
+        else:
+            self.playerShipButtons[n].configure(text=(self.ships[n], "V"))
+        self.selectedShip=n
+    
+        # multiplier = 1
+        # if(self.myShips[self.selectedShip][0] != -1):
+        #     bname = self.playerGrid[self.myShips[self.selectedShip][1]]
+        #     # Calculate if placement was vertical or horizontal
+        #     if(self.myShips[self.selectedShip[2] < self.myShips[self.selectedShip[][1] + 6]]):
+        #         multiplier = 1
+        #     else:
+        #         multiplier = 10
 
+        #     for i in range(0, self.shipsLen[self.selectedShip]):
+        #         bname = self.playerGrid[n+i*self.gridSize]        
+        #         bname.configure(highlightbackground='green')
+            
+    
+    def placeShips(self, n):
+        multiplier = 1
+        remMultiplier = 1
 
-
-        if(selectedShip != None)
-
+        #If ship was replaced, reset it
+        if(self.selectedShip == -1):
+            return
+        if(self.isOrientationVertical):
+            multiplier = self.gridSize
+        
+        if(self.myShips[self.selectedShip] != None):
+            ship = self.myShips[self.selectedShip]
+            if ship.isOrientationVertical:
+                remMultiplier = 10
+            for i in range(0, self.shipsLen[self.selectedShip]):
+                bname = self.playerGrid[ship.start+i*remMultiplier]
+                bname.configure(highlightbackground="blue")
+            ship.__init__()
+        
+        #Check that the ship can be placed without falling off the grid
+        if((n + self.shipsLen[self.selectedShip]*multiplier) <= len(self.playerGrid)):
+            horizontalCheck = (n+self.shipsLen[self.selectedShip])%10
+            #Check that the horizontal laying won't overrun to the next line
+            if(((n%10) <= horizontalCheck) or (horizontalCheck == 0)):
+                for i in range(0, self.shipsLen[self.selectedShip]):
+                    bname = self.playerGrid[n+i*multiplier]
+                    bname.configure(highlightbackground=self.colours[self.selectedShip])
+                newShip = self.ship()
+                newShip.setShip(n, self.selectedShip, self.isOrientationVertical)
+                self.myShips.insert(self.selectedShip, newShip)
+                    
+            # if(n + self.gridSize*self.shipsLen[self.selectedShip] < len(self.playerGrid)):
+            #     for i in range(0, self.shipsLen[n]):
+            #         bname = self.playerGrid[n+i*self.gridSize]        
+            #         bname.configure(fg=self.colours[n])            
+            # bname.configure(text = ships[n][0])
+            # self.playerGrid
+        # else:
+        #     print("oldPlacement")
 
 
     def button_press(self, button_id):
